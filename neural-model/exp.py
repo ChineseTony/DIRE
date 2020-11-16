@@ -123,7 +123,7 @@ def train(args):
 
             loss.backward()
 
-            # clip gradient
+            # clip gradient pytorch梯度裁剪
             grad_norm = torch.nn.utils.clip_grad_norm_(params, 5.)
 
             optimizer.step()

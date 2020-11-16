@@ -11,9 +11,11 @@ SMALL_NUMBER = 1e-8
 def glorot_init(params):
     for p in params:
         if len(p.data.size()) > 1:
+            # 正态分布
             torch.nn.init.xavier_normal_(p.data)
 
 
+# 把数据转移到torch cuda上
 def to(data, device: torch.device):
     if 'adj_lists' in data:
         [x.to(device) for x in data['adj_lists']]
@@ -54,6 +56,7 @@ def get_tensor_dict_size(tensor_dict):
     total_num_elements = 0
     for key, val in tensor_dict.items():
         if isinstance(val, dict):
+            # 递归调用
             num_elements = get_tensor_dict_size(val)
         elif torch.is_tensor(val):
             num_elements = val.nelement()
@@ -70,11 +73,13 @@ def dot_prod_attention(h_t: torch.Tensor,
                        src_encoding_att_linear: torch.Tensor,
                        mask: torch.Tensor = None) -> Tuple[torch.Tensor, torch.Tensor]:
         # (batch_size, src_sent_len)
+        # tensor的矩阵乘法
         att_weight = torch.bmm(src_encoding_att_linear, h_t.unsqueeze(2)).squeeze(2)
 
         if mask is not None:
             att_weight.data.masked_fill_((1. - mask).bool(), -float('inf'))
 
+        # softmax函数
         softmaxed_att_weight = torch.softmax(att_weight, dim=-1)
 
         att_view = (att_weight.size(0), 1, att_weight.size(1))
