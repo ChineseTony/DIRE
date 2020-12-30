@@ -64,17 +64,19 @@ class FinalRename(ida_hexrays.ctree_visitor_t):
         if e.op is ida_hexrays.cot_var:
             original_name = get_expr_name(e)
             if original_name in self.renamings:
-                new_name = self.renamings[original_name]
+                new_type_name = self.renamings[original_name]
 
-                if oldvarnames[original_name] != new_name:
-                    print("Renaming %s to %s"%(oldvarnames[original_name],new_name))
+                if oldvarnames[original_name] != new_type_name:
+                    print("Renaming %s to %s"%(oldvarnames[original_name],new_type_name))
                 # This one refreshes the pseudo-code window
                 self.vuu.rename_lvar(self.vuu.cfunc.get_lvars()[e.v.idx],
-                                str(new_name),
+                                str(new_type_name),
                                 True)
                 # This one stops us from renaming the same variable
                 # over and over. Otherwise it's not needed.
-                self.func.get_lvars()[e.v.idx].name = str(new_name)
+                self.func.get_lvars()[e.v.idx].name = str(new_type_name)
+        #         todo change the variable type
+
         return 0
 
 # Process a single function given its EA
@@ -139,7 +141,7 @@ class predict_names_ah_t(idaapi.action_handler_t):
                     stderr = comm[1]
                     if p.returncode != 0:
                         print(stderr)
-                        raise ValueError("Variable prediction failed")
+                        raise ValueError("Variable type prediction failed")
                     results = json.loads(json_results)
                     best_results = results[0][0]
                     #print("best: ", best_results)
@@ -173,7 +175,7 @@ if idaapi.init_hexrays_plugin():
     idaapi.register_action(
         idaapi.action_desc_t(
             actname,
-            "Predict variable names",
+            "Predict variable type names",
             predict_names_ah_t(),
             "P"))
     name_hooks = name_hooks_t()
@@ -185,7 +187,7 @@ class plugin(idaapi.plugin_t):
     flags = 0
     comment = "Predicts variable names in decompiled code"
 
-    wanted_name = "Predict variable names"
+    wanted_name = "Predict variable type names"
     #wanted_hotkey = "P"
 
     def init(self):

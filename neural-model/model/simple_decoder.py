@@ -28,13 +28,13 @@ class SimpleDecoder(Decoder):
     def build(cls, config):
         params = util.update(cls.default_params(), config)
 
-        vocab = torch.load(params['vocab_file'])
+        vocab = Vocab.load(params['vocab_file'])
         model = cls(params['ast_node_encoding_size'], vocab)
         model.config = params
 
         return model
 
-    def forward(self, src_ast_encoding: Dict[str, torch.Tensor], prediction_target: Dict[str, torch.Tensor]):
+    def forward(self, src_ast_encoding, prediction_target):
         """
         Given a batch of encoded ASTs, compute the log-likelihood of generating all possible renamings
         """

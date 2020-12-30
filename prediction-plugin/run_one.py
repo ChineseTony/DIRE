@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Returns variable name predictions from JSONL read on stdin
+# Returns variable type name predictions from JSONL read on stdin
 # Requires Python 3
 
 from model.model import RenamingModel
@@ -40,7 +40,8 @@ def seed_stuff():
     np.random.seed(seed * 13 // 7)
     random.seed(seed * 17 // 7)
     sys.setrecursionlimit(7000)
-    default_config = '{"decoder": {"remove_duplicates_in_prediction": true} }'
+    # 可以预测出同样的类型 不删除同样预测类型
+    default_config = '{"decoder": {"remove_duplicates_in_prediction": false} }'
     global extra_config
     extra_config = json.loads(default_config)
 
@@ -56,12 +57,12 @@ def decode(model: RenamingModel,
             rename_result = model.predict([example])[0]
             example_pred_accs = []
             top_rename_result = rename_result[0]
-            for old_name, gold_new_name \
+            for old_name, gold_new_type_name \
                 in example.variable_name_map.items():
                 pred = top_rename_result[old_name]
                 pred_new_name = pred['new_name']
                 var_metric = Evaluator.get_soft_metrics(pred_new_name,
-                                                        gold_new_name)
+                                                        gold_new_type_name)
                 example_pred_accs.append(var_metric)
             fun_name = example.ast.compilation_unit
             all_examples[f'{line_num}_{fun_name}'] = \
@@ -79,6 +80,6 @@ decode_results = \
     list(decode(model, examples, model.config).values())
 # Get the first function.  There should be only one.
 if len(decode_results) == 0:
-    raise ValueError("The decoder did not return any variable names.")
+    raise ValueError("The decoder did not return any variable type names.")
 else:
     print(json.dumps(decode_results[0]))
