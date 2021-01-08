@@ -9,6 +9,13 @@ import re
 import subprocess
 import sys
 
+from idc import *
+import idaapi
+import ida_struct
+import idc
+import ida_nalt
+
+
 try:
     from CStringIO import StringIO ## for Python 2
 except ImportError:
@@ -18,6 +25,7 @@ except ImportError:
 varnames = dict()
 oldvarnames = dict()
 var_id = 0
+count = 0
 sentinel_vars = re.compile('@@VAR_[0-9]+')
 
 actname = "predict:varnames"
@@ -25,6 +33,10 @@ actname = "predict:varnames"
 dire_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 RUN_ONE = os.path.join(dire_dir, "run_one.py")
 MODEL = os.path.join(dire_dir, 'data', 'saved_models', 'model.hybrid.bin')
+
+
+def get_expr_type(expr):
+    return expr.type._print()
 
 # Rename variables to sentinel representation
 class RenamedGraphBuilder(GraphBuilder):
@@ -61,20 +73,35 @@ class FinalRename(ida_hexrays.ctree_visitor_t):
         self.vuu = vuu
 
     def visit_expr(self, e):
+        global count
         if e.op is ida_hexrays.cot_var:
             original_name = get_expr_name(e)
+            original_type = get_expr_type(e)
             if original_name in self.renamings:
                 new_type_name = self.renamings[original_name]
 
                 if oldvarnames[original_name] != new_type_name:
                     print("Renaming %s to %s"%(oldvarnames[original_name],new_type_name))
                 # This one refreshes the pseudo-code window
-                self.vuu.rename_lvar(self.vuu.cfunc.get_lvars()[e.v.idx],
-                                str(new_type_name),
-                                True)
+                lvar = self.vuu.cfunc.get_lvars()[e.v.idx]
+                # 预测类和ida不需要重新设置类型
+                if new_type_name not in original_type and  "sizet" not in new_type_name:
+                    tif = ida_typeinf.tinfo_t()
+                    tid_t = ida_struct.add_struc(count, new_type_name)
+                    struct_id = ida_struct.get_struc_id(new_type_name)
+                    if "*" in original_type:
+                        ida_typeinf.parse_decl(tif, None, new_type_name + "* ;", 0)
+                    else:
+                        ida_typeinf.parse_decl(tif, None, "struct " + new_type_name + ";", 0)
+                    lvar.set_lvar_type(tif)
+                    count = count + 1
                 # This one stops us from renaming the same variable
                 # over and over. Otherwise it's not needed.
-                self.func.get_lvars()[e.v.idx].name = str(new_type_name)
+
+                tmp = original_name.split("@@")[2]
+                self.vuu.rename_lvar(self.vuu.cfunc.get_lvars()[e.v.idx],str(tmp),True)
+                self.func.get_lvars()[e.v.idx].name = tmp
+
         #         todo change the variable type
 
         return 0
@@ -150,7 +177,7 @@ class predict_names_ah_t(idaapi.action_handler_t):
                     FinalRename(dict(tuples), cfunc, vuu).apply_to(cfunc.body, None)
 
                     # Force the UI to update
-                    #vuu.refresh_ctext()
+                    vuu.refresh_ctext()
 
                 except ida_hexrays.DecompilationFailure:
                     idaapi.warning("Decompilation failed")
