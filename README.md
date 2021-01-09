@@ -1,1 +1,1 @@
-# DIRE: Decompiled Identifier Renaming Engine
+# DeepS:Deep Struct and Semantics

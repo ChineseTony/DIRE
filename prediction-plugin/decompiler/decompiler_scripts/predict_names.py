@@ -151,7 +151,7 @@ class predict_names_ah_t(idaapi.action_handler_t):
         idaapi.action_handler_t.__init__(self)
 
     def activate(self, ctx):
-        print("Suggesting variable names...")
+        print("Suggesting variable type names...")
         ea = idaapi.get_screen_ea()
         vuu = ida_hexrays.get_widget_vdui(ctx.widget)
         if ea is None:
