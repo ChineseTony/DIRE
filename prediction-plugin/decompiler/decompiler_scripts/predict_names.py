@@ -101,6 +101,9 @@ class FinalRename(ida_hexrays.ctree_visitor_t):
                 tmp = original_name.split("@@")[2]
                 self.vuu.rename_lvar(self.vuu.cfunc.get_lvars()[e.v.idx],str(tmp),True)
                 self.func.get_lvars()[e.v.idx].name = tmp
+                # 动态刷新页面
+                # vu = idaapi.get_widget_vdui(idaapi.find_widget("Pseudocode-A"))
+                # vu.refresh_ctext()
 
         #         todo change the variable type
 
