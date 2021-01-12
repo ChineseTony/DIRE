@@ -113,7 +113,7 @@ class FinalRename(ida_hexrays.ctree_visitor_t):
 #         return 0
 
 
-# todo 读完类型字典表 区分基本类型 自定义类型 还有 结构体类型变量
+# todo 读取类型字典表 区分基本类型 自定义类型 还有 结构体类型变量
 class ChangeType(ida_hexrays.ctree_visitor_t):
     def __init__(self,func, vuu):
         self.func = func
