@@ -27,8 +27,9 @@ oldvarnames = dict()
 var_id = 0
 count = 0
 sentinel_vars = re.compile('@@VAR_[0-9]+')
+vartypes = dict()
 
-actname = "predict:varnames"
+actname = "predict:vartypes"
 
 dire_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 RUN_ONE = os.path.join(dire_dir, "run_one.py")
@@ -64,7 +65,7 @@ class RenamedGraphBuilder(GraphBuilder):
                 var_id += 1
         return self.process(e)
 
-# Rename variables to predicted names
+# 获取name对应的变量类型信息
 class FinalRename(ida_hexrays.ctree_visitor_t):
     def __init__(self, renamings, func, vuu):
         super(FinalRename, self).__init__(0)
@@ -74,39 +75,72 @@ class FinalRename(ida_hexrays.ctree_visitor_t):
 
     def visit_expr(self, e):
         global count
+        global vartypes
         if e.op is ida_hexrays.cot_var:
             original_name = get_expr_name(e)
-            original_type = get_expr_type(e)
             if original_name in self.renamings:
                 new_type_name = self.renamings[original_name]
-
                 if oldvarnames[original_name] != new_type_name:
-                    print("Renaming %s to %s"%(oldvarnames[original_name],new_type_name))
-                # This one refreshes the pseudo-code window
-                lvar = self.vuu.cfunc.get_lvars()[e.v.idx]
-                # 预测类和ida不需要重新设置类型
-                if new_type_name not in original_type and  "sizet" not in new_type_name:
-                    tif = ida_typeinf.tinfo_t()
-                    tid_t = ida_struct.add_struc(count, new_type_name)
-                    struct_id = ida_struct.get_struc_id(new_type_name)
-                    if "*" in original_type:
-                        ida_typeinf.parse_decl(tif, None, new_type_name + "* ;", 0)
-                    else:
-                        ida_typeinf.parse_decl(tif, None, "struct " + new_type_name + ";", 0)
-                    lvar.set_lvar_type(tif)
-                    count = count + 1
-                # This one stops us from renaming the same variable
-                # over and over. Otherwise it's not needed.
-
+                    print("get var typing name %s to %s"%(oldvarnames[original_name],new_type_name))
                 tmp = original_name.split("@@")[2]
                 self.vuu.rename_lvar(self.vuu.cfunc.get_lvars()[e.v.idx],str(tmp),True)
                 self.func.get_lvars()[e.v.idx].name = tmp
+                vartypes[tmp] = new_type_name
                 # 动态刷新页面
-                # vu = idaapi.get_widget_vdui(idaapi.find_widget("Pseudocode-A"))
-                # vu.refresh_ctext()
+                self.vuu = idaapi.get_widget_vdui(idaapi.find_widget("Pseudocode-A"))
+                self.vuu.refresh_ctext()
 
         #         todo change the variable type
 
+        return 0
+
+# class ResetName(ida_hexrays.ctree_visitor_t):
+#     def __init__(self, renamings, func, vuu):
+#         super(ResetName, self).__init__(0)
+#         self.func = func
+#         self.vuu = vuu
+#
+#     def visit_expr(self, e):
+#         global count
+#         if e.op is ida_hexrays.cot_var:
+#             original_name = get_expr_name(e)
+#             tmp = original_name.split("@@")[2]
+#             self.vuu.rename_lvar(self.vuu.cfunc.get_lvars()[e.v.idx],str(tmp),True)
+#             self.func.get_lvars()[e.v.idx].name = tmp
+#             # 动态刷新页面
+#             self.vuu = idaapi.get_widget_vdui(idaapi.find_widget("Pseudocode-A"))
+#             self.vuu.refresh_ctext()
+#         return 0
+
+
+# todo 读完类型字典表 区分基本类型 自定义类型 还有 结构体类型变量
+class ChangeType(ida_hexrays.ctree_visitor_t):
+    def __init__(self,func, vuu):
+        self.func = func
+        self.vuu = vuu
+        super(ChangeType, self).__init__(1)
+
+    def visit_expr(self, e):
+        global count
+        global vartypes
+        if e.op is ida_hexrays.cot_var:
+            original_name = get_expr_name(e)
+            print("vartype---->"+str(vartypes))
+            lvar = self.vuu.cfunc.get_lvars()[e.v.idx]
+            if original_name in vartypes.keys():
+                predict_type_name = vartypes[original_name]
+                original_type = get_expr_type(e)
+                if "sizet" not in predict_type_name:
+                    tif = ida_typeinf.tinfo_t()
+                    tid_t = ida_struct.add_struc(count, predict_type_name)
+                    struct_id = ida_struct.get_struc_id(predict_type_name)
+                    if "*" in original_type:
+                        ida_typeinf.parse_decl(tif, None, predict_type_name + "* ;", 0)
+                    else:
+                        ida_typeinf.parse_decl(tif, None, "struct " + predict_type_name + ";", 0)
+                    lvar.set_lvar_type(tif)
+                    self.vuu = idaapi.get_widget_vdui(idaapi.find_widget("Pseudocode-A"))
+                    self.vuu.refresh_ctext()
         return 0
 
 # Process a single function given its EA
@@ -179,14 +213,14 @@ class predict_names_ah_t(idaapi.action_handler_t):
 
                     FinalRename(dict(tuples), cfunc, vuu).apply_to(cfunc.body, None)
 
-                    # Force the UI to update
-                    vuu.refresh_ctext()
-
                 except ida_hexrays.DecompilationFailure:
                     idaapi.warning("Decompilation failed")
 
                 except ValueError as e:
                     idaapi.warning(str(e) + ". See output window for more details.")
+            ChangeType(cfunc, vuu).apply_to(cfunc.body, None)
+            # Force the UI to update
+            vuu.refresh_ctext()
         return 1
 
     def update(self, ctx):
