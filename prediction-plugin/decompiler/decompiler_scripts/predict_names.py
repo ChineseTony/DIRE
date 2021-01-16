@@ -29,6 +29,7 @@ count = 0
 sentinel_vars = re.compile('@@VAR_[0-9]+')
 vartypes = dict()
 
+basic_types = ['short','int','float','double','char','long']
 actname = "predict:vartypes"
 
 dire_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
@@ -38,6 +39,16 @@ MODEL = os.path.join(dire_dir, 'data', 'saved_models', 'model.hybrid.bin')
 
 def get_expr_type(expr):
     return expr.type._print()
+
+def ctype_trim(ctypestr):
+    mystr = "".join(ctypestr.split())
+    mystr = mystr.replace("[", "_")
+    mystr = mystr.replace("]", "_")
+    mystr = mystr.replace("_", "")
+    mystr = mystr.replace("*", "")
+    mystr = mystr.replace("const", "")
+    return mystr
+
 
 # Rename variables to sentinel representation
 class RenamedGraphBuilder(GraphBuilder):
@@ -137,14 +148,18 @@ class ChangeType(ida_hexrays.ctree_visitor_t):
                 predict_type_name = vartypes[original_name]
                 original_type = get_expr_type(e)
                 # 如果原来的类型 == 预测变量类型直接跳过
-                if "sizet" not in predict_type_name and predict_type_name in original_type:
+                if "sizet" not in predict_type_name and predict_type_name != ctype_trim(original_type):
                     tif = ida_typeinf.tinfo_t()
                     tid_t = ida_struct.add_struc(count, predict_type_name)
                     struct_id = ida_struct.get_struc_id(predict_type_name)
-                    if "*" in original_type:
-                        ida_typeinf.parse_decl(tif, None, predict_type_name + "* ;", 0)
+                    # 如果是基本类型
+                    if predict_type_name in basic_types:
+                        ida_typeinf.parse_decl(tif, None, predict_type_name + " ;", 0)
                     else:
-                        ida_typeinf.parse_decl(tif, None, "struct " + predict_type_name + " ;", 0)
+                        if "*" in original_type:
+                            ida_typeinf.parse_decl(tif, None, predict_type_name + "* ;", 0)
+                        else:
+                            ida_typeinf.parse_decl(tif, None, "struct " + predict_type_name + " ;", 0)
                     lvar.set_lvar_type(tif)
                     self.vuu = idaapi.get_widget_vdui(idaapi.find_widget("Pseudocode-A"))
                     self.vuu.refresh_ctext()
