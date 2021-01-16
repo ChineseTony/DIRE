@@ -150,12 +150,12 @@ class ChangeType(ida_hexrays.ctree_visitor_t):
                 # 如果原来的类型 == 预测变量类型直接跳过
                 if "sizet" not in predict_type_name and predict_type_name != ctype_trim(original_type):
                     tif = ida_typeinf.tinfo_t()
-                    tid_t = ida_struct.add_struc(count, predict_type_name)
-                    struct_id = ida_struct.get_struc_id(predict_type_name)
                     # 如果是基本类型
                     if predict_type_name in basic_types:
                         ida_typeinf.parse_decl(tif, None, predict_type_name + " ;", 0)
                     else:
+                        tid_t = ida_struct.add_struc(count, predict_type_name)
+                        struct_id = ida_struct.get_struc_id(predict_type_name)
                         ida_typeinf.parse_decl(tif, None, "struct " + predict_type_name + " *;", 0)
                     lvar.set_lvar_type(tif)
                     self.vuu = idaapi.get_widget_vdui(idaapi.find_widget("Pseudocode-A"))
