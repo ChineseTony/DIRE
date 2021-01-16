@@ -156,10 +156,7 @@ class ChangeType(ida_hexrays.ctree_visitor_t):
                     if predict_type_name in basic_types:
                         ida_typeinf.parse_decl(tif, None, predict_type_name + " ;", 0)
                     else:
-                        if "*" in original_type:
-                            ida_typeinf.parse_decl(tif, None, predict_type_name + "* ;", 0)
-                        else:
-                            ida_typeinf.parse_decl(tif, None, "struct " + predict_type_name + " ;", 0)
+                        ida_typeinf.parse_decl(tif, None, "struct " + predict_type_name + " *;", 0)
                     lvar.set_lvar_type(tif)
                     self.vuu = idaapi.get_widget_vdui(idaapi.find_widget("Pseudocode-A"))
                     self.vuu.refresh_ctext()
