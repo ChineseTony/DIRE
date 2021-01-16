@@ -136,7 +136,8 @@ class ChangeType(ida_hexrays.ctree_visitor_t):
             if original_name in vartypes.keys():
                 predict_type_name = vartypes[original_name]
                 original_type = get_expr_type(e)
-                if "sizet" not in predict_type_name:
+                # 如果原来的类型 == 预测变量类型直接跳过
+                if "sizet" not in predict_type_name and predict_type_name in original_type:
                     tif = ida_typeinf.tinfo_t()
                     tid_t = ida_struct.add_struc(count, predict_type_name)
                     struct_id = ida_struct.get_struc_id(predict_type_name)
