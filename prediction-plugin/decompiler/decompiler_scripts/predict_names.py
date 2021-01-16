@@ -157,7 +157,8 @@ class ChangeType(ida_hexrays.ctree_visitor_t):
                         tid_t = ida_struct.add_struc(count, predict_type_name)
                         struct_id = ida_struct.get_struc_id(predict_type_name)
                         ida_typeinf.parse_decl(tif, None, "struct " + predict_type_name + " *;", 0)
-                    lvar.set_lvar_type(tif)
+                    self.vuu.set_lvar_type(lvar, tif)
+                    # lvar.set_lvar_type(tif)
                     self.vuu = idaapi.get_widget_vdui(idaapi.find_widget("Pseudocode-A"))
                     self.vuu.refresh_ctext()
         return 0
