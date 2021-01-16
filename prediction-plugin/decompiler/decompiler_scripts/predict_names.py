@@ -112,6 +112,12 @@ class FinalRename(ida_hexrays.ctree_visitor_t):
 #             self.vuu.refresh_ctext()
 #         return 0
 
+def set_typedef_type(name:str):
+    tinfo = ida_typeinf.tinfo_t()
+    til = ida_typeinf.til_t()
+    # tinfo.create_typedef(til, "MyBool", ida_typeinf.BTF_TYPEDEF, True)
+    tinfo.create_typedef(til, name, ida_typeinf.BTF_TYPEDEF, True)
+
 
 # todo 读取类型字典表 区分基本类型 自定义类型 还有 结构体类型变量
 class ChangeType(ida_hexrays.ctree_visitor_t):
@@ -137,7 +143,7 @@ class ChangeType(ida_hexrays.ctree_visitor_t):
                     if "*" in original_type:
                         ida_typeinf.parse_decl(tif, None, predict_type_name + "* ;", 0)
                     else:
-                        ida_typeinf.parse_decl(tif, None, "struct " + predict_type_name + ";", 0)
+                        ida_typeinf.parse_decl(tif, None, "struct " + predict_type_name + " ;", 0)
                     lvar.set_lvar_type(tif)
                     self.vuu = idaapi.get_widget_vdui(idaapi.find_widget("Pseudocode-A"))
                     self.vuu.refresh_ctext()
