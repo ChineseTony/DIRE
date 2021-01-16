@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Returns variable type name predictions from JSONL read on stdin
 # Requires Python 3
 

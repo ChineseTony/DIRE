@@ -205,7 +205,7 @@ class AttentionalRecurrentSubtokenDecoder(RecurrentSubtokenDecoder):
                 _new_hyp_scores = beam_new_hyp_scores.cpu()
 
                 for i in range(cont_beam_size):
-                    prev_hyp_id = _prev_hyp_ids[i].item()
+                    prev_hyp_id = int(_prev_hyp_ids[i].item())
                     prev_hyp = beam[prev_hyp_id]
                     hyp_var_name_id = _hyp_var_name_ids[i].item()
                     new_hyp_score = _new_hyp_scores[i].item()
