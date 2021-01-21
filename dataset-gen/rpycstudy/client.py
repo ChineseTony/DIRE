@@ -27,16 +27,17 @@ tid_t = ida_struct.add_struc(1, "hashentry")
 struct_id = ida_struct.get_struc_id("hashentry")
 my_struct = ida_struct.get_struc(struct_id)
 lvars = cfunc.get_lvars()
+vu = idaapi.get_widget_vdui(idaapi.find_widget("Pseudocode-A"))
 for lvar in lvars:
     if str(lvar.name) == 'j':
         tif = ida_typeinf.tinfo_t()
         ida_typeinf.parse_decl(tif, None, "struct hashentry;", 0)
         # tif.get_typ
-        lvar.set_lvar_type(tif)
+        vu.set_lvar_type(lvar, tif)
         print(str(lvar.name)+"--->"+str(lvar.type()))
     else:
         print(str(lvar.name) + "--->" + str(lvar.type()))
-vu = idaapi.get_widget_vdui(idaapi.find_widget("Pseudocode-A"))
+
 vu.refresh_ctext()
 cfunc = None
 try:
