@@ -32,7 +32,7 @@ for lvar in lvars:
     if str(lvar.name) == 'j':
         tif = ida_typeinf.tinfo_t()
         ida_typeinf.parse_decl(tif, None, "struct hashentry;", 0)
-        # tif.get_typ
+        # tif.get_type
         vu.set_lvar_type(lvar, tif)
         print(str(lvar.name)+"--->"+str(lvar.type()))
     else:
