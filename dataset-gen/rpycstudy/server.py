@@ -21,12 +21,11 @@ def main():
         thread.daemon = True
         thread.start()
     else:
-        while True:
-            srv = OneShotServer(SlaveService, port=port)
-            srv._listen()
-            srv._register()
-            srv.accept()
-            idc.exit_process()
+        srv = OneShotServer(SlaveService, port=port)
+        srv._listen()
+        srv._register()
+        srv.accept()
+        idc.exit_process()
 
 if __name__ == '__main__':
     main()
