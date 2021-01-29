@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+# refrence idalink
+
+
+import random
 import socket
 import time
 from rpyc import classic as rpyc_classic
@@ -147,15 +151,65 @@ def ida_spawn(ida_binary, filename, port=18861, mode='oneshot',
     return subprocess.Popen(command, env=env)
 
 
+
+class IDALink(object):
+    def __init__(self,
+                 ida_binary=None,
+                 filename=None,
+                 host=None,
+                 port=None,
+                 retry=10,
+                 processor_type=None,
+                 logfile=None):
+
+        if port is None:
+            if host is not None:
+                raise ValueError("Provided host but not port")
+            port = random.randint(40000, 49999)
+
+        if ida_binary is None and host is None:
+            raise ValueError("Must provide ida_binary or host")
+        if ida_binary is not None and host is not None:
+            raise ValueError("Must provide exactly one of ida_binary and host")
+
+        if ida_binary is not None:
+            if filename is None:
+                raise ValueError("Must provide filename if spawning a local process")
+
+            self._proc = ida_spawn(ida_binary, filename, port, processor_type=processor_type, logfile=logfile)
+            host = 'localhost'
+        else:
+            self._proc = None
+
+        self._link = ida_connect(host, port, retry=retry)
+
+        for m in IDA_MODULES:
+            try:
+                setattr(self, m, self._link.root.getmodule(m))
+            except ImportError:
+                pass
+        self.filename = filename
+
+    def close(self):
+        self._link.close()
+        if self._proc is not None:
+            self._proc.wait()
+
+
+
 ida_binary = "/home/tom/Desktop/idapro-7.5/ida64"
 filename = "chcon"
-tmp = ida_spawn(ida_binary, filename, mode="threaded")
-link = RemoteIDALink(filename)
-conn = ida_connect()
-
-conn.execute("import idautils")
-conn.execute("import ida_pro")
-conn.execute('print(str(idautils.Functions())', file=conn.modules.sys.stdout)
-subprocess.call(['rm', '-f', f'{filename}.i64'])
-
-
+ida = IDALink(ida_binary, filename)
+for ea in ida.idautils.Functions():
+    print(ida.idaapi.get_func_name(ea))
+    f = ida.idaapi.get_func(ea)
+    if f is None:
+        print('Please position the cursor within a function')
+    cfunc = None
+    try:
+        cfunc = ida.idaapi.decompile(f)
+    except ida.ida_hexrays.DecompilationFailure:
+        pass
+vu = ida.idaapi.get_widget_vdui(ida.idaapi.find_widget("Pseudocode-A"))
+print(vu)
+ida.close()
