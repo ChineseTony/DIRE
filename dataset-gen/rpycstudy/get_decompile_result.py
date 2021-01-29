@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# refrence idalink
+# reference https://github.com/zardus/idalink
 
 
 import random

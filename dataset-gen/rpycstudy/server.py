@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 在ida 开启server脚本
-
+# reference https://github.com/zardus/idalink
 import idc
 import threading
 

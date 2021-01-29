@@ -11,7 +11,7 @@ import idc
 import ida_nalt
 import ida_hexrays
 
-
+# reference https://github.com/zardus/idalink
 # decomplie 所有变量类型
 funcs = idautils.Functions()
 ea = idaapi.get_screen_ea()
