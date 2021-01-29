@@ -96,7 +96,7 @@ class RemoteIDALink(object):
         self.filename = filename
         for m in IDA_MODULES:
             try:
-                setattr(self, m, conn.root.getmodule(m))
+                setattr(self, m, __import__(m))
             except ImportError:
                 pass
 
@@ -135,7 +135,7 @@ def ida_spawn(ida_binary, filename, port=18861, mode='oneshot',
 
     command = [
         ida_realpath,
-        '-A',
+        # '-A',
         '-S%s %d %s' % (server_script, port, mode),
         '-L%s' % logfile,
     ]
@@ -147,12 +147,15 @@ def ida_spawn(ida_binary, filename, port=18861, mode='oneshot',
     return subprocess.Popen(command, env=env)
 
 
-ida_binary = "idat64"
+ida_binary = "/home/tom/Desktop/idapro-7.5/ida64"
 filename = "chcon"
 tmp = ida_spawn(ida_binary, filename, mode="threaded")
-link = RemoteIDALink("filename")
+link = RemoteIDALink(filename)
 conn = ida_connect()
+
 conn.execute("import idautils")
-print(conn.execute('idautils.Functions()'))
+conn.execute("import ida_pro")
+conn.execute('print(str(idautils.Functions())', file=conn.modules.sys.stdout)
+subprocess.call(['rm', '-f', f'{filename}.i64'])
 
 

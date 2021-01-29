@@ -17,7 +17,7 @@ def main():
     thread_mode = idc.ARGV[2] == 'threaded' if idc.ARGV[2:] else False
     print('Received arguments: port=%s, thread_mode=%s' % (port, thread_mode))
     if thread_mode:
-        thread = threading.Thread(target=main_thread, args=(port, thread_mode))
+        thread = threading.Thread(target=main_thread, args=(port, ))
         thread.daemon = True
         thread.start()
     else:
