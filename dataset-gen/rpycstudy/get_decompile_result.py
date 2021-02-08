@@ -197,7 +197,7 @@ class IDALink(object):
 
 
 
-ida_binary = "/home/tom/Desktop/idapro-7.5/ida64"
+ida_binary = "/Users/tom/Downloads/ida/ida.app/Contents/MacOS/ida64"
 filename = "chcon"
 ida = IDALink(ida_binary, filename)
 for ea in ida.idautils.Functions():
@@ -210,6 +210,19 @@ for ea in ida.idautils.Functions():
         cfunc = ida.idaapi.decompile(f)
     except ida.ida_hexrays.DecompilationFailure:
         pass
-vu = ida.idaapi.get_widget_vdui(ida.idaapi.find_widget("Pseudocode-A"))
-print(vu)
+
+for ea in ida.idautils.Functions():
+    print(ida.idaapi.get_func_name(ea))
+    f = ida.idaapi.get_func(ea)
+    if f is None:
+        print('Please position the cursor within a function')
+    ida.idaapi.open_pseudocode(ea, 0)
+    vu = ida.idaapi.get_widget_vdui(ida.idaapi.find_widget("Pseudocode-A"))
+
+    # todo 通过vu设置变量类型
+
+    print(ida.idaapi.decompile(f))
+    ida.idaapi.close_pseudocode(ida.idaapi.find_widget("Pseudocode-A"))
+
+
 ida.close()

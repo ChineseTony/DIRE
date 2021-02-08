@@ -2,3 +2,9 @@
 *.pyc
 .idea/
 .vscode/
+
+#ida
+chcon
+*.id[0-9]
+*.nam
+*.til
