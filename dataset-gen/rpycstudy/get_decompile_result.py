@@ -12,6 +12,7 @@ import os
 import subprocess
 import sys
 import rpyc
+import argparse
 import tempfile
 from errors import IDALinkError
 
@@ -19,6 +20,19 @@ LOG = logging.getLogger('idalink')
 MODULE_DIR = os.path.dirname(os.path.realpath(__file__))
 IDA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'support')
 LOGFILE = os.path.join(tempfile.gettempdir(), 'idatlink-{port}.log')
+
+
+parser = argparse.ArgumentParser(description="get ida location and open \
+                 a binary file")
+parser.add_argument('--ida_location',
+                    help="location of the ida",
+                    default='/Users/tom/Downloads/ida/ida.app/Contents/MacOS/ida',
+)
+parser.add_argument('--binary_file_name',
+                    help="binary file name",
+                    default='chcon',
+)
+
 
 
 
@@ -201,8 +215,12 @@ class IDALink(object):
 
 
 
-ida_binary = "/Users/tom/Downloads/ida/ida.app/Contents/MacOS/ida"
-filename = "chcon"
+
+
+args = parser.parse_args()
+
+ida_binary = args.ida_location
+filename = args.binary_file_name
 ida = IDALink(ida_binary, filename)
 # 设置异常
 rpyc.core.vinegar._generic_exceptions_cache["ida_hexrays.DecompilationFailure"] \
@@ -212,6 +230,7 @@ for ea in ida.idautils.Functions():
     f = ida.idaapi.get_func(ea)
     if f is None:
         print('Please position the cursor within a function')
+        continue
     cfunc = None
 
     ida.idaapi.open_pseudocode(ea, 0)
@@ -221,7 +240,7 @@ for ea in ida.idautils.Functions():
     # todo 通过vu设置变量类型
     try:
         cfunc = ida.idaapi.decompile(f)
-    except ida.ida_hexrays.DecompilationFailure :
+    except ida.ida_hexrays.DecompilationFailure:
         pass
     except TypeError:
         pass

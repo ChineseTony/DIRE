@@ -1,3 +1,4 @@
+#-*- coding: utf-8 -*-
 from collections import defaultdict
 import ida_hexrays
 import ida_lines
@@ -12,8 +13,38 @@ hexrays_vars = re.compile("^(v|a)[0-9]+$")
 def get_expr_name(expr):
     name = expr.print1(None)
     name = ida_lines.tag_remove(name)
+    #print("name2---->"+name)
     name = ida_pro.str2user(name)
+    #print("name3--->"+name)
     return name
+
+def ctype_trim(ctypestr):
+    mystr = "".join(ctypestr.split())
+    mystr = mystr.replace("[","_")
+    mystr = mystr.replace("]","_")
+    mystr = mystr.replace("struct","")
+    mystr = mystr.replace("_","")
+    mystr = mystr.replace("*","")
+    mystr = mystr.replace("const","")
+    return mystr
+
+def ctype_trim2(ctypestr):
+    mystr = "".join(ctypestr.split())
+    mystr = mystr.replace("struct","")
+    mystr = mystr.replace("const","")
+    mystr = mystr.replace("[","_")
+    mystr = mystr.replace("]","_")
+    mystr = mystr.replace("*","")
+    if mystr.count('_') == 2:
+        mystr = mystr.split("_")[0]
+    elif mystr.count('_') >= 3:
+        mystr = mystr.split("_")[0] +  mystr.split("_")[1]
+    return mystr
+
+
+def get_expr_type(expr):
+    return ctype_trim(expr.type._print())
+
 
 class CFuncGraph:
     def __init__(self, highlight):
@@ -119,6 +150,14 @@ class CFuncGraph:
         # Specific info for different node types
         if item.op == ida_hexrays.cot_ptr:
             node_info["pointer_size"] = item.cexpr.ptrsize
+            if item.is_expr() and not item.cexpr.type.empty():
+                old_name = get_expr_type(item.cexpr)
+                #print("oldname--->"+old_name)
+                #struct_id = ida_struct.get_struc_id(old_name)
+                #ptr_size = item.cexpr.ptrsize
+                #my_struct = ida_struct.get_struc(struct_id)
+                #my_member_id = ida_struct.get_member(my_struct, ptr_size).id
+                #node_info["type"] = ida_struct.get_member_fullname(my_member_id)
         elif item.op == ida_hexrays.cot_memptr:
             node_info.update({
                 "pointer_size": item.cexpr.ptrsize,

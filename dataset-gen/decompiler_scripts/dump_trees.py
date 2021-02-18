@@ -1,5 +1,5 @@
 from collections import defaultdict
-from util import UNDEF_ADDR, CFuncGraph, GraphBuilder, hexrays_vars, get_expr_name
+from util import UNDEF_ADDR, CFuncGraph, GraphBuilder, hexrays_vars, get_expr_name,ctype_trim,ctype_trim2
 import idaapi
 import ida_hexrays
 import ida_kernwin
@@ -9,6 +9,8 @@ import jsonlines
 import pickle
 import os
 import re
+from idc import *
+import idautils
 
 varmap = dict()
 # Dictionary mapping variable ids to (orig, renamed) pairs
@@ -27,17 +29,22 @@ class RenamedGraphBuilder(GraphBuilder):
         if e.op is ida_hexrays.cot_var:
             # Save original name of variable
             original_name = get_expr_name(e)
+            original_type_name = ctype_trim(e.cexpr.type._print())
             if not sentinel_vars.match(original_name):
-                # Get new name of variable
+                temp_dict = dict()
                 addresses = frozenset(self.addresses[original_name])
                 if addresses in varmap and varmap[addresses] != '::NONE::':
                     new_name = varmap[addresses]
+                    if new_name in temp_dict.keys():
+                        struct_inof = temp_dict[new_name]
+                        new_name = struct_inof
                 else:
-                    new_name = original_name
-                # Save names
+                    new_name = original_type_name
+                #print("new_name"+new_name+"original_name"+original_name)
                 varnames[var_id] = (original_name, new_name)
                 # Rename variables to @@VAR_[id]@@[orig name]@@[new name]
-                self.func.get_lvars()[e.v.idx].name = '@@VAR_' + str(var_id) + '@@' + original_name + '@@' + new_name
+                #self.func.get_lvars()[e.v.idx].name = '@@VAR_' + str(var_id) + '@@' + original_name + '@@' +ctype_trim(str(new_name))
+                self.func.get_lvars()[e.v.idx].name = '@@VAR_' + str(var_id)+'@@'+ original_name + '@@' +ctype_trim(str(new_name))
                 var_id += 1
         return self.process(e)
 
@@ -50,6 +57,8 @@ class AddressCollector:
         for item in self.cg.items:
             if item.op is ida_hexrays.cot_var:
                 name = get_expr_name(item)
+                #name = str(ctype_trim(item.type._print()))
+                mytpye = ctype_trim(item.type._print())
                 if item.ea != UNDEF_ADDR:
                     self.addresses[name].add(item.ea)
                 else:
@@ -61,7 +70,7 @@ class AddressCollector:
 # Process a single function given its EA
 def func(ea):
     f = idaapi.get_func(ea)
-    function_name = GetFunctionName(ea)
+    function_name = get_func_name(ea)
     if f is None:
         print('Please position the cursor within a function')
 
@@ -123,6 +132,7 @@ def main():
     global varnames
     renamed_prefix = os.path.join(os.environ['OUTPUT_DIR'], 'functions',
                                   os.environ['PREFIX'])
+    print("renamed_prefix"+renamed_prefix)
     # Load collected variables
     with open(os.environ['COLLECTED_VARS']) as vars_fh:
         varmap = pickle.load(vars_fh)
@@ -131,7 +141,7 @@ def main():
     cv = collect_vars()
     cv.activate(None)
 
-idaapi.autoWait()
+idaapi.auto_wait()
 if not idaapi.init_hexrays_plugin():
     idaapi.load_plugin('hexrays')
     idaapi.load_plugin('hexx64')
