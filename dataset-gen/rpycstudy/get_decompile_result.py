@@ -11,6 +11,7 @@ import logging
 import os
 import subprocess
 import sys
+import rpyc
 import tempfile
 from errors import IDALinkError
 
@@ -18,6 +19,8 @@ LOG = logging.getLogger('idalink')
 MODULE_DIR = os.path.dirname(os.path.realpath(__file__))
 IDA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'support')
 LOGFILE = os.path.join(tempfile.gettempdir(), 'idatlink-{port}.log')
+
+
 
 IDA_MODULES = ['ida_allins',
                'ida_auto',
@@ -139,6 +142,7 @@ def ida_spawn(ida_binary, filename, port=18861, mode='oneshot',
 
     command = [
         ida_realpath,
+        # 关闭自动模式，需要打开窗口页面
         # '-A',
         '-S%s %d %s' % (server_script, port, mode),
         '-L%s' % logfile,
@@ -197,9 +201,12 @@ class IDALink(object):
 
 
 
-ida_binary = "/Users/tom/Downloads/ida/ida.app/Contents/MacOS/ida64"
+ida_binary = "/Users/tom/Downloads/ida/ida.app/Contents/MacOS/ida"
 filename = "chcon"
 ida = IDALink(ida_binary, filename)
+# 设置异常
+rpyc.core.vinegar._generic_exceptions_cache["ida_hexrays.DecompilationFailure"] \
+    = ida.ida_hexrays.DecompilationFailure
 for ea in ida.idautils.Functions():
     print(ida.idaapi.get_func_name(ea))
     f = ida.idaapi.get_func(ea)
@@ -209,17 +216,18 @@ for ea in ida.idautils.Functions():
 
     ida.idaapi.open_pseudocode(ea, 0)
     vu = ida.idaapi.get_widget_vdui(ida.idaapi.find_widget("Pseudocode-A"))
+    print(vu)
 
     # todo 通过vu设置变量类型
-
-
     try:
         cfunc = ida.idaapi.decompile(f)
-    except ida.ida_hexrays.DecompilationFailure:
+    except ida.ida_hexrays.DecompilationFailure :
         pass
-
-    print(ida.idaapi.decompile(f))
+    except TypeError:
+        pass
+    print(cfunc)
     ida.idaapi.close_pseudocode(ida.idaapi.find_widget("Pseudocode-A"))
 
-
+# ida.ida_pro.qexit(0)
 ida.close()
+

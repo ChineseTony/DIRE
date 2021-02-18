@@ -21,7 +21,8 @@ def main():
         thread.daemon = True
         thread.start()
     else:
-        srv = OneShotServer(SlaveService, port=port)
+        srv = OneShotServer(SlaveService, port=port,
+                            protocol_config={'import_custom_exceptions': True})
         srv._listen()
         srv._register()
         srv.accept()

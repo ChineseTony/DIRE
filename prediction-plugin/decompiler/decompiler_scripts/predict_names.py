@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+
 from collections import defaultdict
 from util import UNDEF_ADDR, CFuncGraph, GraphBuilder, hexrays_vars, get_expr_name
 import idaapi
@@ -29,7 +32,7 @@ count = 0
 sentinel_vars = re.compile('@@VAR_[0-9]+')
 vartypes = dict()
 
-basic_types = ['short','int','float','double','char','long']
+basic_types = ['short', 'int', 'float', 'double', 'char', 'long']
 actname = "predict:vartypes"
 
 dire_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
