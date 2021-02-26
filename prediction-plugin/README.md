@@ -44,7 +44,7 @@ To install the script as a plugin, create a symbolic link to
 from your Hex-Rays `plugins` directory.  For example:
 
 ```bash
-ln -s /path/to/prediction-plugin/decompiler/decompiler-scripts/predict_names.py /path/to/idapro-7.3/plugins/predict_names.py
+ln -s /path/to/prediction-plugin/decompiler/decompiler-scripts/predict_types.py /path/to/idapro-7.3/plugins/predict_types.py
 ```
 
 You only need to do this once.

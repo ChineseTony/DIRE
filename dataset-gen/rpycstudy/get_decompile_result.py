@@ -223,6 +223,7 @@ ida_binary = args.ida_location
 filename = args.binary_file_name
 ida = IDALink(ida_binary, filename)
 # 设置异常
+time.sleep(3)
 rpyc.core.vinegar._generic_exceptions_cache["ida_hexrays.DecompilationFailure"] \
     = ida.ida_hexrays.DecompilationFailure
 for ea in ida.idautils.Functions():
@@ -236,15 +237,21 @@ for ea in ida.idautils.Functions():
     ida.idaapi.open_pseudocode(ea, 0)
     vu = ida.idaapi.get_widget_vdui(ida.idaapi.find_widget("Pseudocode-A"))
     print(vu)
-
-    # todo 通过vu设置变量类型
-    try:
-        cfunc = ida.idaapi.decompile(f)
-    except ida.ida_hexrays.DecompilationFailure:
-        pass
-    except TypeError:
-        pass
-    print(cfunc)
+    if vu is not None:
+        # 获取pseudocode函数
+        print(vu.cfunc)
+        lvars = vu.cfunc.get_lvars()
+        for lvar in lvars:
+            print(lvar.name)
+            lvar_name = lvar.name
+            # 结合collect.py 获取变量对应的变量类型信息 然后设置变量类型
+            # todo 返回 变量 经过类型传导的变量类型  { key(变量）：value(变量类型）}
+            lvar_name = "hashentry"
+            tif = ida.ida_typeinf.tinfo_t()
+            tid_t = ida.ida_struct.add_struc(0, lvar_name)
+            struct_id = ida.ida_struct.get_struc_id(lvar_name)
+            ida.ida_typeinf.parse_decl(tif, None, "struct " + lvar_name + " *;", 0)
+            vu.set_lvar_type(lvar, tif)
     ida.idaapi.close_pseudocode(ida.idaapi.find_widget("Pseudocode-A"))
 
 # ida.ida_pro.qexit(0)
