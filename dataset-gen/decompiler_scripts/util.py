@@ -24,7 +24,8 @@ def ctype_trim(ctypestr):
     mystr = mystr.replace("]","_")
     mystr = mystr.replace("struct","")
     mystr = mystr.replace("_","")
-    mystr = mystr.replace("*","")
+    # 保留指针类型 * 会进行分词 需要重新替换
+    mystr = mystr.replace("*","$")
     mystr = mystr.replace("const","")
     return mystr
 
@@ -34,7 +35,7 @@ def ctype_trim2(ctypestr):
     mystr = mystr.replace("const","")
     mystr = mystr.replace("[","_")
     mystr = mystr.replace("]","_")
-    mystr = mystr.replace("*","")
+    mystr = mystr.replace("*","$")
     if mystr.count('_') == 2:
         mystr = mystr.split("_")[0]
     elif mystr.count('_') >= 3:

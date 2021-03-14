@@ -94,6 +94,8 @@ class Evaluator(object):
         func_name_not_in_train_acc_list = []
         func_body_in_train_acc_list = []
         func_body_not_in_train_acc_list = []
+        all_pred_evalution = {}
+        all_data = dict()
 
         all_examples = dict()
 
@@ -109,7 +111,18 @@ class Evaluator(object):
                         pred = top_rename_result[old_name]
                         pred_new_name = pred['new_name']
                         var_metric = Evaluator.get_soft_metrics(pred_new_name, gold_new_name)
-                        # is_correct = pred_new_name == gold_new_name
+                        # 预测名 == 标签名称 统计词频
+                        is_correct = pred_new_name == gold_new_name
+                        if is_correct:
+                            if pred_new_name not in all_pred_evalution:
+                                all_pred_evalution[pred_new_name] = 1
+                            else:
+                                all_pred_evalution[pred_new_name] = all_pred_evalution[pred_new_name] + 1
+                        if pred_new_name not in all_data:
+                            all_data[pred_new_name] = 1
+                        else:
+                            all_data[pred_new_name] = all_data[pred_new_name] + 1
+
                         example_pred_accs.append(var_metric)
 
                         if gold_new_name != old_name:  # and gold_new_name in model.vocab.target:
@@ -128,6 +141,7 @@ class Evaluator(object):
                     variable_acc_list.extend(example_pred_accs)
                     example_acc_list.append(example_pred_accs)
 
+
                     if return_results:
                         all_examples[example.binary_file['file_name'] + '_' + str(example.binary_file['line_num'])] = (rename_result, Evaluator.average(example_pred_accs))
                         # all_examples.append((example, rename_result, example_pred_accs))
@@ -135,6 +149,12 @@ class Evaluator(object):
         valid_example_num = len(example_acc_list)
         num_variables = len(variable_acc_list)
         corpus_acc = Evaluator.average(variable_acc_list)
+
+        all_pred_evalution = sorted(all_pred_evalution.items(),key = lambda x:x[1])
+        all_precise = dict()
+        for k,v in all_pred_evalution.items():
+            all_precise[k] = round(float(v / all_data[k]), 2)
+
 
         if was_training:
             model.train()
@@ -146,7 +166,9 @@ class Evaluator(object):
                             func_body_in_train_acc=Evaluator.average(func_body_in_train_acc_list),
                             func_body_not_in_train_acc=Evaluator.average(func_body_not_in_train_acc_list),
                             num_variables=num_variables,
-                            num_valid_examples=valid_example_num)
+                            num_valid_examples=valid_example_num,
+                            all_result_evalution=all_pred_evalution,
+                            all_precise=all_precise)
 
         if return_results:
             return eval_results, all_examples
