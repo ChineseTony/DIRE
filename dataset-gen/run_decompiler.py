@@ -120,8 +120,6 @@ with tempfile.TemporaryDirectory() as tempdir:
                 # No timeout here, we know it'll run in a reasonable amount of
                 # time and don't want mismatched files
                 run_decompiler(stripped.name, env, DUMP_TREES)
-                # 删除文件
-                subprocess.call(['rm', '-rf', stripped.name])
         end = datetime.datetime.now()
         duration = end-start
         print(f"Duration: {duration}\n")

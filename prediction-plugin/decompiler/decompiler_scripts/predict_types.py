@@ -48,7 +48,7 @@ def ctype_trim(ctypestr):
     mystr = mystr.replace("[", "_")
     mystr = mystr.replace("]", "_")
     mystr = mystr.replace("_", "")
-    mystr = mystr.replace("*", "")
+    mystr = mystr.replace("*", "$")
     mystr = mystr.replace("const", "")
     return mystr
 
@@ -156,10 +156,14 @@ class ChangeType(ida_hexrays.ctree_visitor_t):
                     # 如果是基本类型
                     if predict_type_name in basic_types:
                         ida_typeinf.parse_decl(tif, None, predict_type_name + " ;", 0)
-                    else:
-                        tid_t = ida_struct.add_struc(count, predict_type_name)
-                        struct_id = ida_struct.get_struc_id(predict_type_name)
-                        ida_typeinf.parse_decl(tif, None, "struct " + predict_type_name + " *;", 0)
+                    elif "$" in predict_type_name:
+                        # 指针类型 多级指针类型
+                        pred_type_name = predict_type_name.replace("$","*")
+                        tmp_name = pred_type_name.replace("$","")
+                        tid_t = ida_struct.add_struc(count, tmp_name)
+                        struct_id = ida_struct.get_struc_id(tmp_name)
+                        ida_typeinf.parse_decl(tif, None, "struct " + pred_type_name + ";", 0)
+                    # 自定义类型 结构体类型 struct
                     self.vuu.set_lvar_type(lvar, tif)
                     # lvar.set_lvar_type(tif)
                     self.vuu = idaapi.get_widget_vdui(idaapi.find_widget("Pseudocode-A"))

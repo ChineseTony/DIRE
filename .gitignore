@@ -8,3 +8,5 @@ chcon
 *.id[0-9]
 *.nam
 *.til
+
+*.DS_Store

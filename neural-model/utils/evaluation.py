@@ -1,3 +1,4 @@
+#-*- coding: utf-8 -*-
 from typing import Dict, List, Any
 
 import numpy as np
@@ -118,6 +119,13 @@ class Evaluator(object):
                                 all_pred_evalution[pred_new_name] = 1
                             else:
                                 all_pred_evalution[pred_new_name] = all_pred_evalution[pred_new_name] + 1
+                        else:
+                            #  fix unicode error
+                            try:
+                                print("pred_name---->" + str(pred_new_name) + "&&&gold_new_name---->" + str(gold_new_name))
+                            except Exception  as e:
+                                continue
+
                         if pred_new_name not in all_data:
                             all_data[pred_new_name] = 1
                         else:
