@@ -162,7 +162,7 @@ class ChangeType(ida_hexrays.ctree_visitor_t):
                         tmp_name = pred_type_name.replace("$","")
                         tid_t = ida_struct.add_struc(count, tmp_name)
                         struct_id = ida_struct.get_struc_id(tmp_name)
-                        ida_typeinf.parse_decl(tif, None, "struct " + pred_type_name + ";", 0)
+                        ida_typeinf.parse_decl(tif, None, "struct " + tmp_name + ";", 0)
                     # 自定义类型 结构体类型 struct
                     self.vuu.set_lvar_type(lvar, tif)
                     # lvar.set_lvar_type(tif)
