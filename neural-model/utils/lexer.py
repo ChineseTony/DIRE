@@ -101,7 +101,7 @@ class HexRaysLexer(CLexer):
             (r'>>', Token.Operator),
             (r'\.\.\.', Token.Operator),
             (r'##', Token.Operator),
-            (r'::', Token.Operator),
+            # (r'::', Token.Operator),
             (r'@@VAR_[0-9]+@@\w+@@\w+', Token.Placeholder.Var),
             inherit
         ]

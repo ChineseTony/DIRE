@@ -44,6 +44,7 @@ from utils.vocab import Vocab, VocabEntry
 
 
 import os
+# CUDA_VISIBLE_DEVICES=0 python ./exp.py ...
 # os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 # os.environ['GPU_DEBUG'] = '2'
 # from gpu_profile import gpu_profile

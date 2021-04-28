@@ -271,10 +271,11 @@ class AttentionalRecurrentSubtokenDecoder(RecurrentSubtokenDecoder):
                         var_name_token_ids = hyp.variable_list[var_id]
                         if var_name_token_ids == [same_variable_id, end_of_variable_id]:
                             new_var_name = old_name
+                            variable_rename_result[old_name] = {'new_name': new_var_name, 'prob': 0}
                         else:
                             new_var_name = self.vocab.target.subtoken_model.decode_ids(var_name_token_ids)
+                            variable_rename_result[old_name] = {'new_name': new_var_name, 'prob': hyp.score}
 
-                        variable_rename_result[old_name] = {'new_name': new_var_name, 'prob': hyp.score}
 
                     example_rename_results.append(variable_rename_result)
 

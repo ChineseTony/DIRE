@@ -97,6 +97,7 @@ class Evaluator(object):
         func_body_not_in_train_acc_list = []
         all_pred_evalution = {}
         all_data = dict()
+        err_count = 0
 
         all_examples = dict()
 
@@ -111,6 +112,9 @@ class Evaluator(object):
                     for old_name, gold_new_name in example.variable_name_map.items():
                         pred = top_rename_result[old_name]
                         pred_new_name = pred['new_name']
+                        prod_tmp = pred['prob']
+                        if prod_tmp == 0:
+                            err_count += 1
                         var_metric = Evaluator.get_soft_metrics(pred_new_name, gold_new_name)
                         # 预测名 == 标签名称 统计词频
                         is_correct = pred_new_name == gold_new_name
@@ -176,7 +180,8 @@ class Evaluator(object):
                             num_variables=num_variables,
                             num_valid_examples=valid_example_num,
                             all_result_evalution=all_pred_evalution,
-                            all_precise=all_precise)
+                            all_precise=all_precise,
+                            err_count=err_count)
 
         if return_results:
             return eval_results, all_examples
