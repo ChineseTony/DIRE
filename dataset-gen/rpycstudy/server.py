@@ -26,7 +26,8 @@ def main():
         srv._listen()
         srv._register()
         srv.accept()
-        idc.exit_process()
+        idc.Exit(0)
+        # idc.exit_process()
 
 if __name__ == '__main__':
     main()

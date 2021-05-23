@@ -22,19 +22,6 @@ IDA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'support')
 LOGFILE = os.path.join(tempfile.gettempdir(), 'idatlink-{port}.log')
 
 
-parser = argparse.ArgumentParser(description="get ida location and open \
-                 a binary file")
-parser.add_argument('--ida_location',
-                    help="location of the ida",
-                    default='/home/tom/Desktop/idapro-7.5/ida',
-)
-parser.add_argument('--binary_file_name',
-                    help="binary file name",
-                    default='chcon',
-)
-
-
-
 
 IDA_MODULES = ['ida_allins',
                'ida_auto',
@@ -213,49 +200,46 @@ class IDALink(object):
         if self._proc is not None:
             self._proc.wait()
 
+def get_type(ida_binary,filename,structs:dict):
+    ida = IDALink(ida_binary, filename)
+    # 设置异常
+    rpyc.core.vinegar._generic_exceptions_cache["ida_hexrays.DecompilationFailure"] \
+        = ida.ida_hexrays.DecompilationFailure
+    type_dict = dict()
+    struct_names = set()
+    for ea in ida.idautils.Functions():
+        print(ida.idaapi.get_func_name(ea))
+        f = ida.idaapi.get_func(ea)
+        if f is None:
+            print('Please position the cursor within a function')
+            continue
+        cfunc = None
+        ida.idaapi.open_pseudocode(ea, 0)
+        vu = ida.idaapi.get_widget_vdui(ida.idaapi.find_widget("Pseudocode-A"))
+        print(vu)
+        if vu is not None:
+            # 获取pseudocode函数
+            print("before-->"+vu.cfunc)
+            lvars = vu.cfunc.get_lvars()
+            for lvar in lvars:
+                tmp = 0
+                if lvar.name in structs.keys():
+                    struct_name = structs[lvar.name]
+                    struct_names.add(struct_name)
+                    tif = ida.ida_typeinf.tinfo_t()
+                    tid_t = ida.ida_struct.add_struc(tmp, struct_name)
+                    struct_id = ida.ida_struct.get_struc_id(struct_name)
+                    ida.ida_typeinf.parse_decl(tif, None, "struct " + struct_name + " *;", 0)
+                    tmp += 1
+                    vu.set_lvar_type(lvar, tif)
+            # 获取经过类型传递之后的反编译代码
+            print("change--->" + vu.cfunc)
+            for var in vu.cfunc.get_lvars():
+                if var.type() in struct_names:
+                    type_dict[var.name] = var.type()
+        ida.idaapi.close_pseudocode(ida.idaapi.find_widget("Pseudocode-A"))
 
-
-
-
-args = parser.parse_args()
-
-ida_binary = args.ida_location
-filename = args.binary_file_name
-ida = IDALink(ida_binary, filename)
-# 设置异常
-rpyc.core.vinegar._generic_exceptions_cache["ida_hexrays.DecompilationFailure"] \
-    = ida.ida_hexrays.DecompilationFailure
-for ea in ida.idautils.Functions():
-    print(ida.idaapi.get_func_name(ea))
-    f = ida.idaapi.get_func(ea)
-    if f is None:
-        print('Please position the cursor within a function')
-        continue
-    cfunc = None
-
-    ida.idaapi.open_pseudocode(ea, 0)
-    vu = ida.idaapi.get_widget_vdui(ida.idaapi.find_widget("Pseudocode-A"))
-    print(vu)
-    if vu is not None:
-        # 获取pseudocode函数
-        print(vu.cfunc)
-        lvars = vu.cfunc.get_lvars()
-        for lvar in lvars:
-            print(lvar.name)
-            lvar_name = lvar.name
-            # 结合collect.py 获取变量对应的变量类型信息 然后设置变量类型
-            # todo 返回 变量 经过类型传导的变量类型  { key(变量）：value(变量类型）}
-            # lvar_name = "hashentry"
-            # tif = ida.ida_typeinf.tinfo_t()
-            # tid_t = ida.ida_struct.add_struc(0, lvar_name)
-            # struct_id = ida.ida_struct.get_struc_id(lvar_name)
-            # ida.ida_typeinf.parse_decl(tif, None, "struct " + lvar_name + " *;", 0)
-            # vu.set_lvar_type(lvar, tif)
-        # 获取经过类型传递之后的反编译代码
-        print("change--->")
-        print(vu.cfunc)
-    ida.idaapi.close_pseudocode(ida.idaapi.find_widget("Pseudocode-A"))
-
-# ida.ida_pro.qexit(0)
-ida.close()
+    # ida.ida_pro.qexit(0)
+    ida.close()
+    return type_dict
 

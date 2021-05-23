@@ -13,10 +13,13 @@ import os
 import subprocess
 import sys
 import tempfile
+from rpycstudy import get_decompile_result
+env = os.environ.copy()
 
 statyre_dir = os.path.dirname(os.path.abspath(__file__))
 COLLECT = os.path.join(statyre_dir, 'decompiler_scripts', 'collect.py')
 DUMP_TREES = os.path.join(statyre_dir, 'decompiler_scripts', 'dump_trees.py')
+GET_INFO = os.path.join(statyre_dir, 'decompiler_scripts', 'get_info.py')
 
 parser = argparse.ArgumentParser(description="Run the decompiler to generate a corpus.")
 parser.add_argument('--ida',
@@ -111,14 +114,24 @@ with tempfile.TemporaryDirectory() as tempdir:
                 except:
                     print("No variables collected\n")
                     continue
-            # Make a new stripped copy and pass it the collected vars
+            # 类型传导
+            new_type_name = dict()
+            with tempfile.NamedTemporaryFile() as stripped:
+                subprocess.call(['cp', file_path, stripped.name])
+                subprocess.call(['strip', '--strip-debug', stripped.name])
+                print(f"{binary} set type")
+                # 获取dump_type类型
+                run_decompiler(stripped.name, env, GET_INFO)
+                ida_binary = "ida64"
+                types = env['TYPES']
+                new_type_name = get_decompile_result.get_type(ida_binary, stripped.name, types)
+                env['NEW_TYPE_NAME'] = new_type_name
+
+            # 根据new_type_name  再重新设置变量名
             with tempfile.NamedTemporaryFile() as stripped:
                 subprocess.call(['cp', file_path, stripped.name])
                 subprocess.call(['strip', '--strip-debug', stripped.name])
                 print(f"{binary} stripped")
-                # Dump the trees.
-                # No timeout here, we know it'll run in a reasonable amount of
-                # time and don't want mismatched files
                 run_decompiler(stripped.name, env, DUMP_TREES)
         end = datetime.datetime.now()
         duration = end-start

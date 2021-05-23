@@ -15,9 +15,9 @@ import idautils
 varmap = dict()
 # Dictionary mapping variable ids to (orig, renamed) pairs
 varnames = dict()
-env = os.environ.copy()
 var_id = 0
 sentinel_vars = re.compile('@@VAR_[0-9]+')
+env = os.environ.copy()
 
 class RenamedGraphBuilder(GraphBuilder):
     def __init__(self, cg, func, addresses):
@@ -31,6 +31,7 @@ class RenamedGraphBuilder(GraphBuilder):
             # Save original name of variable
             original_name = get_expr_name(e)
             original_type_name = ctype_trim(e.cexpr.type._print())
+            types = dict()
             if not sentinel_vars.match(original_name):
                 temp_dict = dict()
                 addresses = frozenset(self.addresses[original_name])
@@ -39,18 +40,13 @@ class RenamedGraphBuilder(GraphBuilder):
                     if new_name in temp_dict.keys():
                         struct_info = temp_dict[new_name]
                         new_name = struct_info
+                        # $ 为指针类型，类型传导 添加到环境变量用于类型传导
+                        if "$" in new_name:
+                            types[original_name] = new_name.replace("$","")
+                            env['TYPES'] = types
                 else:
-                    new_type_name = env['NEW_TYPE_NAME']
-                    if original_name in new_type_name:
-                       new_name = new_type_name[original_name]
-                    else:
-                        # 没找到只能用原来的变量名称
-                        new_name = original_type_name
-                #print("new_name"+new_name+"original_name"+original_name)
-                varnames[var_id] = (original_name, new_name)
-                # Rename variables to @@VAR_[id]@@[orig name]@@[new name]
-                #self.func.get_lvars()[e.v.idx].name = '@@VAR_' + str(var_id) + '@@' + original_name + '@@' +ctype_trim(str(new_name))
-                self.func.get_lvars()[e.v.idx].name = '@@VAR_' + str(var_id)+'@@'+ original_name + '@@' +ctype_trim(str(new_name))
+                    new_name = original_type_name
+                # varnames[var_id] = (original_name, new_name)
                 var_id += 1
         return self.process(e)
 
@@ -63,7 +59,6 @@ class AddressCollector:
         for item in self.cg.items:
             if item.op is ida_hexrays.cot_var:
                 name = get_expr_name(item)
-                #name = str(ctype_trim(item.type._print()))
                 mytpye = ctype_trim(item.type._print())
                 if item.ea != UNDEF_ADDR:
                     self.addresses[name].add(item.ea)
@@ -119,16 +114,6 @@ class custom_action_handler(ida_kernwin.action_handler_t):
 class collect_vars(custom_action_handler):
     def activate(self, ctx):
         print('Collecting vars.')
-        jsonl_file_name = os.path.join(os.environ['OUTPUT_DIR'],
-                                       os.environ['PREFIX']) + '.jsonl'
-        with open(jsonl_file_name, 'w+') as jsonl_file:
-            with jsonlines.Writer(jsonl_file) as writer:
-                for ea in Functions():
-                    try:
-                        info = func(ea)
-                        writer.write(func(ea))
-                    except (ida_hexrays.DecompilationFailure, ValueError):
-                        continue
         print('Vars collected.')
         return 1
 
@@ -138,7 +123,6 @@ def main():
     global varnames
     renamed_prefix = os.path.join(os.environ['OUTPUT_DIR'], 'functions',
                                   os.environ['PREFIX'])
-    print("renamed_prefix"+renamed_prefix)
     # Load collected variables
     with open(os.environ['COLLECTED_VARS']) as vars_fh:
         varmap = pickle.load(vars_fh)
